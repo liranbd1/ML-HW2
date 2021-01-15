@@ -11,16 +11,19 @@ def main():
     mndata = MNIST('./Files/')
     images, labels = mndata.load_training()
     #plot_images(images, labels)
-    centroid_arr = calc_centroids(images, labels)
+    #centroid_arr = calc_centroids(images, labels)
     #plot_images(centroid_arr, list(range(0,10)))   
-    plot_euclidean_distance(centroid_arr)
-
+    #plot_euclidean_distance(centroid_arr)
+    #var_dic = calc_variance(images)
+    #plot_var_histogram(var_dic)
+    #clean_images = remove_zero_var_pixels(var_dic, images)
+    #bob = calc_mean(images)
+    calc_cov_matrix(images)
 
 def plot_images(images, labels):
     row_size = 2
     col_size = 5
 
-    # plot images
     fig, axes = plt.subplots(row_size, col_size, figsize=(1.5*col_size,2*row_size))
     for i in range(10):
         ax = axes[i//col_size, i%col_size]
@@ -46,16 +49,79 @@ def plot_euclidean_distance(centroids_array):
     for i, centroid in enumerate(centroids_array):
         for  j, other_centroid in enumerate(centroids_array):
             df.loc[i,j] = np.format_float_positional(np.linalg.norm(centroid-other_centroid),precision=3)
-    
-    #pd.plotting.table(plt.axes(), df)
-    #plt.show()
-    cell_text = []
+
+    cell_values = []
     for row in range(len(df)):
-        cell_text.append(df.iloc[row])
-    table = plt.table(cellText=cell_text, colLabels=df.columns, loc='center')
+        cell_values.append(df.iloc[row])
+    table = plt.table(cellText=cell_values, colLabels=df.columns, loc='center')
     table.auto_set_font_size(False)
     table.set_fontsize(6)
     plt.axis('equal')
     plt.show()          
+
+def calc_variance(images):
+    variance_dic = {}
+    for image in images:
+        npimg = np.array(image).reshape(28,28)
+        for cords, pixel in np.ndenumerate(npimg):
+            if not cords in variance_dic.keys():
+                variance_dic[cords] = []
+            variance_dic[cords].append(pixel)
+    
+    for i, (key, value) in enumerate(variance_dic.items()):
+        variance_dic[key] = np.floor(np.var(np.array(value)))
+
+    return variance_dic
+
+def plot_var_histogram(variance_dic):
+    var_list = []
+    for key, var in variance_dic.items():
+        var_list.append(var)
+    bin_jump = np.round(max(var_list)/10)
+    hist_bins = np.arange(min(var_list), max(var_list), bin_jump).tolist()
+    plt.hist(var_list, bins = hist_bins, rwidth=0.5)
+    plt.show()
+
+def remove_zero_var_pixels(var_dic, images):
+    index_list = []
+    clean_images = []
+    for key, var in var_dic.items():
+        if var == 0:
+            i,j = key
+            index_list.append((i*28)+j)
+    for image in images:
+        clean_image = []
+        for index, pixel in enumerate(image):
+            if not index in index_list:
+                clean_image.append(pixel)
+        clean_images.append(clean_image)
+    return clean_images
+
+def calc_mean(images):
+
+    mean_dic = {}
+    for image in images:
+        npimg = np.array(image)
+        for cords, pixel in np.ndenumerate(npimg):
+            if not cords in mean_dic.keys():
+                mean_dic[cords] = []
+            mean_dic[cords].append(pixel)
+
+    for i, (k,v) in enumerate(mean_dic.items()):
+        mean_dic[k] = np.mean(np.array(mean_dic[k]))
+    return mean_dic
+
+def calc_cov_matrix(images):
+    feature_dic = {}
+    for image in images:
+        for cord, pixel in enumerate(image):
+            if not cord in feature_dic.keys():
+                feature_dic[cord] = []
+            feature_dic[cord].append(pixel)
+    images_mat = np.zeros(len(images))
+    for i, (k,v) in enumerate(feature_dic.items()):
+        print(k)
+        images_mat[k] = np.array(v) # Error need to fix for some reason can't make v into an array.
+
 
 main()
